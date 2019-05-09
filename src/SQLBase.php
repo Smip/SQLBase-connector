@@ -29,7 +29,7 @@ class SQLBase
     private function connect() {
         $this->dbconn = odbc_connect($this->dsn, $this->username, $this->password);
         if (!$this->dbconn) {
-            throw new Exception('Could not connect: '. odbc_errormsg());
+            throw new \Exception('Could not connect: '. odbc_errormsg());
         }
     }
 
