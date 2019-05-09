@@ -12,6 +12,10 @@ class SQLBase
     private $password;
     private $schema;
 
+    /**
+     * 
+     * @param type $configuration
+     */
     public function __construct($configuration) {
 //        'dsn' => '',
 //        'username' => '',
@@ -35,7 +39,9 @@ class SQLBase
     }
 
     function __destruct() {
-        odbc_close($this->dbconn);
+        if ($this->dbconn) {
+            odbc_close($this->dbconn);
+        }
     }
 
     public function fetch($result) {
@@ -52,6 +58,12 @@ class SQLBase
         }
     }
 
+    /**
+     * 
+     * @param string $sql sql-query
+     * @param mixed ... variables to binding 
+     * @return mixed
+     */
     public function getAll() {
         $ret = array();
         $query = $this->prepareQuery(func_get_args());
@@ -77,6 +89,12 @@ class SQLBase
         return array_slice($ret, $OFFSET[1], $limit[1]);
     }
 
+    /**
+     * 
+     * @param string $sql sql-query
+     * @param mixed ... variables to binding 
+     * @return mixed
+     */
     public function getCol() {
         $ret = array();
         $query = $this->prepareQuery(func_get_args());
@@ -99,6 +117,12 @@ class SQLBase
         return array_slice($ret, $OFFSET[1], $limit[1], TRUE);
     }
 
+    /**
+     * 
+     * @param string $sql sql-query
+     * @param mixed ... variables to binding 
+     * @return mixed
+     */
     public function getOne() {
 
         $query = $this->prepareQuery(func_get_args());
@@ -113,6 +137,12 @@ class SQLBase
         return FALSE;
     }
 
+    /**
+     * 
+     * @param string $sql sql-query
+     * @param mixed ... variables to binding 
+     * @return mixed
+     */
     public function getRow() {
         $query = $this->prepareQuery(func_get_args());
         if ($res = $this->rawQuery($query)) {
@@ -123,10 +153,24 @@ class SQLBase
         return FALSE;
     }
 
+    /**
+     * 
+     * @param string $sql sql-query
+     * @param mixed ... variables to binding 
+     * @return mixed
+     */
     public function query() {
         return $this->rawQuery($this->prepareQuery(func_get_args()));
     }
 
+    /**
+     * 
+     * 
+     * @param string $key key
+     * @param string $sql sql-query
+     * @param mixed ... variables to binding 
+     * @return mixed two-dimensional array indexed by the values of the field specified by the first parameter
+     */
     public function getInd() {
         $args = func_get_args();
         $index = array_shift($args);
@@ -155,6 +199,13 @@ class SQLBase
         return array_slice($ret, $OFFSET[1], $limit[1], TRUE);
     }
 
+    /**
+     * 
+     * @param string $key key
+     * @param string $sql sql-query
+     * @param mixed ... variables to binding 
+     * @return mixed array of scalars, indexed by the field from the first parameter. Indispensable for compiling dictionaries of the form key => value
+     */
     public function getIndCol() {
         $args = func_get_args();
         $index = array_shift($args);
