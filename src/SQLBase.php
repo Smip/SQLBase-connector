@@ -77,14 +77,20 @@ class SQLBase
         } else {
             $OFFSET[1] = 0;
         }
-//        var_dump($query);
+        $collection = collect([]);
         if ($res = $this->rawQuery($query)) {
-            while ($row = $this->fetch($res)) {
-                $ret[] = $row;
+            while ($row = $this->fetch($res) or $collection->count() < $limit[1]) {
+                if($OFFSET[1]){
+                    $OFFSET[1] -= 1;
+                    continue;
+                }
+                $collection->push($row);
+//                $ret[] = $row;
             }
             $this->free($res);
         }
-        return array_slice($ret, $OFFSET[1], $limit[1]);
+        return $collection;
+//        return array_slice($ret, $OFFSET[1], $limit[1]);
     }
 
     /**
