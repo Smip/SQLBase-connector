@@ -17,19 +17,20 @@ class SQLBase
 //        'username' => '',
 //        'password' => '',
 //        'schema' => ''
-        
+
         $this->emode = "error";
         $this->dsn = $configuration['dsn'];
         $this->username = $configuration['username'];
         $this->password = $configuration['password'];
         $this->schema = $configuration['schema'];
-        $this->connect();
     }
 
     private function connect() {
-        $this->dbconn = odbc_connect($this->dsn, $this->username, $this->password);
         if (!$this->dbconn) {
-            throw new \Exception('Could not connect: '. odbc_errormsg());
+            $this->dbconn = odbc_connect($this->dsn, $this->username, $this->password);
+            if (!$this->dbconn) {
+                throw new \Exception('Could not connect: ' . odbc_errormsg());
+            }
         }
     }
 
@@ -184,6 +185,7 @@ class SQLBase
     }
 
     private function rawQuery($query) {
+        $this->connect();
         $start = microtime(TRUE);
         $res = odbc_exec($this->dbconn, $query);
         $timer = microtime(TRUE) - $start;
