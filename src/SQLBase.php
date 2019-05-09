@@ -6,7 +6,6 @@ class SQLBase
 {
 
     private $dbconn;
-    private $emode;
     private $dsn;
     private $username;
     private $password;
@@ -22,7 +21,6 @@ class SQLBase
 //        'password' => '',
 //        'schema' => ''
 
-        $this->emode = "error";
         $this->dsn = $configuration['dsn'];
         $this->username = $configuration['username'];
         $this->password = $configuration['password'];
@@ -309,6 +307,22 @@ class SQLBase
             $query .= $part;
         }
         $query = str_replace("NOW()", date("Y-m-d H:i:s"), $query);
+        preg_match_all("/FROM\s+(.*?)(?:\s+where|\s\)|$|\s+order|\s+limit)/is", $query, $matches, PREG_OFFSET_CAPTURE);
+        $correction = 0;
+        foreach ($matches[1] as $match) {
+            $tables = explode(',', $match[0]);
+            $newTables = [];
+            foreach ($tables as $tableName) {
+                if (strpos($tableName, '.') === false) {
+                    $tableName = $this->schema . "." . trim($tableName);
+                }
+                $newTables[] = $tableName;
+            }
+            $tableList = implode(", ", $newTables);
+            $query = substr_replace($query, $tableList, $match[1] + $correction, strlen($match[0]));
+            $correction += strlen($tableList) - strlen($match[0]);
+        }
+
         return $query;
     }
 
@@ -375,13 +389,8 @@ class SQLBase
     }
 
     private function error($err) {
-        $err = __CLASS__ . ": " . $err;
-        if ($this->emode == 'error') {
-            $err .= ". Error initiated in " . $this->caller() . ", thrown";
-            trigger_error($err, E_USER_ERROR);
-        } else {
-            throw new $this->exname($err);
-        }
+        $err .= ". Error initiated in " . $this->caller() . ", thrown";
+        throw new \Exception($err);
     }
 
     private function caller() {
