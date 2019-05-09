@@ -161,7 +161,7 @@ class SQLBase
         if (preg_match("/LIMIT (\d+)/", $query, $res) and $res[1]) {
             $query = preg_replace("/LIMIT \d+/", "", $query);
         }
-        $limit = 1;
+
 
         if (preg_match("/OFFSET (\d+)/", $query, $res) and isset($res[1])) {
             $query = preg_replace("/OFFSET \d+/", "", $query);
@@ -170,12 +170,13 @@ class SQLBase
             $offset = 0;
         }
         if ($res = $this->rawQuery($query)) {
-            while ($row = $this->fetch($res) and $collection->count() < $limit) {
+            while ($row = $this->fetch($res)) {
                 if ($offset) {
                     $offset -= 1;
                     continue;
                 }
                 $collection = collect($row);
+                break;
             }
             $this->free($res);
         }
