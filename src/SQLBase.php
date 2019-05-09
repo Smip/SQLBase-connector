@@ -238,11 +238,10 @@ class SQLBase
         $start = microtime(TRUE);
         $res = odbc_exec($this->dbconn, $query);
         $timer = microtime(TRUE) - $start;
-        $this->stats[] = array(
+        $this->stats[] = [
             'query' => $query,
-            'start' => $start,
-            'timer' => $timer,
-        );
+            'time' => $timer
+        ];
         if (!$res) {
             $error = odbc_error($this->dbconn);
 
@@ -255,6 +254,10 @@ class SQLBase
         }
         $this->cutStats();
         return $res;
+    }
+
+    public function getQueryLog() {
+        return $this->stats;
     }
 
     public function parse() {
