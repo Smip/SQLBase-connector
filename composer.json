@@ -1,5 +1,5 @@
 {
-    "name": "Smip/SQLBase-connector",
+    "name": "smip/sql-base-connector",
     "type": "library",
     "description": "SQLBase connector",
     "keywords": ["SQLBase","gupta"],
