@@ -4,19 +4,35 @@ namespace SQLBase;
 
 class SQLBase
 {
+
     private $dbconn;
     private $emode;
+    private $dsn;
+    private $username;
+    private $password;
+    private $schema;
 
-
-    public function __construct($server, $user, $pass) {
+    public function __construct($configuration) {
+//        'dsn' => '',
+//        'username' => '',
+//        'password' => '',
+//        'schema' => ''
+        
         $this->emode = "error";
-        $this->dbconn = odbc_connect($server, $user, $pass);
-        if(!$this->dbconn){
-            die('Could not connect: ' . odbc_errormsg());
+        $this->dsn = $configuration['dsn'];
+        $this->username = $configuration['username'];
+        $this->password = $configuration['password'];
+        $this->schema = $configuration['schema'];
+        $this->connect();
+    }
+
+    private function connect() {
+        $this->dbconn = odbc_connect($this->dsn, $this->username, $this->password);
+        if (!$this->dbconn) {
+            throw new Exception('Could not connect: '. odbc_errormsg());
         }
     }
-    
-    
+
     function __destruct() {
         odbc_close($this->dbconn);
     }
