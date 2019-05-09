@@ -63,34 +63,39 @@ class SQLBase
      * @return mixed
      */
     public function getAll() {
-        $ret = array();
+        $stat = [];
+        $start = microtime(TRUE);
         $query = $this->prepareQuery(func_get_args());
+        $stat['query'] = $query;
 
-        if (preg_match("/LIMIT (\d+)/", $query, $limit) and $limit[1]) {
+        if (preg_match("/LIMIT (\d+)/", $query, $res) and $res[1]) {
             $query = preg_replace("/LIMIT \d+/", "", $query);
+            $limit = (int) $res[1];
         } else {
-            $limit[1] = null;
+            $limit = null;
         }
-        preg_match("/OFFSET (\d+)/", $query, $OFFSET);
-        if (isset($OFFSET[1])) {
+
+        if (preg_match("/OFFSET (\d+)/", $query, $res) and isset($res[1])) {
             $query = preg_replace("/OFFSET \d+/", "", $query);
+            $offset = $res[1];
         } else {
-            $OFFSET[1] = 0;
+            $offset = 0;
         }
+
         $collection = collect([]);
         if ($res = $this->rawQuery($query)) {
-            while ($row = $this->fetch($res) or $collection->count() < $limit[1]) {
-                if($OFFSET[1]){
-                    $OFFSET[1] -= 1;
+            while ($row = $this->fetch($res) and $collection->count() < $limit) {
+                if ($offset) {
+                    $offset -= 1;
                     continue;
                 }
                 $collection->push($row);
-//                $ret[] = $row;
             }
             $this->free($res);
         }
+        $stat['time'] = microtime(TRUE) - $start;
+        $this->stats[] = $stat;
         return $collection;
-//        return array_slice($ret, $OFFSET[1], $limit[1]);
     }
 
     /**
@@ -148,6 +153,38 @@ class SQLBase
      * @return mixed
      */
     public function getRow() {
+        $start = microtime(TRUE);
+        $stat = [];
+        $query = $this->prepareQuery(func_get_args());
+        $stat['query'] = $query;
+
+        if (preg_match("/LIMIT (\d+)/", $query, $res) and $res[1]) {
+            $query = preg_replace("/LIMIT \d+/", "", $query);
+        }
+        $limit = 1;
+
+        if (preg_match("/OFFSET (\d+)/", $query, $res) and isset($res[1])) {
+            $query = preg_replace("/OFFSET \d+/", "", $query);
+            $offset = $res[1];
+        } else {
+            $offset = 0;
+        }
+        if ($res = $this->rawQuery($query)) {
+            while ($row = $this->fetch($res) and $collection->count() < $limit) {
+                if ($offset) {
+                    $offset -= 1;
+                    continue;
+                }
+                $collection = collect($row);
+            }
+            $this->free($res);
+        }
+        $stat['time'] = microtime(TRUE) - $start;
+        $this->stats[] = $stat;
+        return $collection;
+
+
+
         $query = $this->prepareQuery(func_get_args());
         if ($res = $this->rawQuery($query)) {
             $ret = $this->fetch($res);
@@ -241,21 +278,10 @@ class SQLBase
 
     private function rawQuery($query) {
         $this->connect();
-        $start = microtime(TRUE);
         $res = odbc_exec($this->dbconn, $query);
-        $timer = microtime(TRUE) - $start;
-        $this->stats[] = [
-            'query' => $query,
-            'time' => $timer
-        ];
         if (!$res) {
             $error = odbc_error($this->dbconn);
-
-            end($this->stats);
-            $key = key($this->stats);
-            $this->stats[$key]['error'] = $error;
             $this->cutStats();
-
             $this->error("$error. Full query: [$query]");
         }
         $this->cutStats();
