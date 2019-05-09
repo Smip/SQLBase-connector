@@ -10,7 +10,7 @@ class SQLBase
     private $username;
     private $password;
     private $schema;
-    private $stats;
+    private $stats = [];
 
     /**
      * 
