@@ -85,7 +85,10 @@ class SQLBase
 
         $collection = collect([]);
         if ($res = $this->rawQuery($query)) {
-            while ($row = $this->fetch($res) and $collection->count() < $limit) {
+            while ($row = $this->fetch($res)) {
+                if($limit and $collection->count() >= $limit){
+                    break;
+                }
                 if ($offset) {
                     $offset -= 1;
                     continue;
@@ -105,59 +108,12 @@ class SQLBase
      * @param mixed ... variables to binding 
      * @return mixed
      */
-    public function getCol() {
-        $ret = array();
-        $query = $this->prepareQuery(func_get_args());
-        if (preg_match("/LIMIT (\d+)/", $query, $limit) and $limit[1]) {
-            $query = preg_replace("/LIMIT (\d+)/", "", $query);
-        } else {
-            $limit[1] = null;
-        }
-        if (preg_match("/OFFSET (\d+)/", $query, $OFFSET) and $OFFSET[1]) {
-            $query = preg_replace("/OFFSET (\d+)/", "", $query);
-        } else {
-            $OFFSET[1] = 0;
-        }
-        if ($res = $this->rawQuery($query)) {
-            while ($row = $this->fetch($res)) {
-                $ret[] = reset($row);
-            }
-            $this->free($res);
-        }
-        return array_slice($ret, $OFFSET[1], $limit[1], TRUE);
-    }
-
-    /**
-     * 
-     * @param string $sql sql-query
-     * @param mixed ... variables to binding 
-     * @return mixed
-     */
-    public function getOne() {
-
-        $query = $this->prepareQuery(func_get_args());
-
-        if ($res = $this->rawQuery($query)) {
-            $row = $this->fetch($res);
-            if (is_array($row)) {
-                return reset($row);
-            }
-            $this->free($res);
-        }
-        return FALSE;
-    }
-
-    /**
-     * 
-     * @param string $sql sql-query
-     * @param mixed ... variables to binding 
-     * @return mixed
-     */
     public function getRow() {
         $start = microtime(TRUE);
         $stat = [];
         $query = $this->prepareQuery(func_get_args());
         $stat['query'] = $query;
+        $collection = collect([]);
 
         if (preg_match("/LIMIT (\d+)/", $query, $res) and $res[1]) {
             $query = preg_replace("/LIMIT \d+/", "", $query);
@@ -184,16 +140,6 @@ class SQLBase
         $stat['time'] = microtime(TRUE) - $start;
         $this->stats[] = $stat;
         return $collection;
-
-
-
-        $query = $this->prepareQuery(func_get_args());
-        if ($res = $this->rawQuery($query)) {
-            $ret = $this->fetch($res);
-            $this->free($res);
-            return $ret;
-        }
-        return FALSE;
     }
 
     /**
@@ -206,77 +152,6 @@ class SQLBase
         return $this->rawQuery($this->prepareQuery(func_get_args()));
     }
 
-    /**
-     * 
-     * 
-     * @param string $key key
-     * @param string $sql sql-query
-     * @param mixed ... variables to binding 
-     * @return mixed two-dimensional array indexed by the values of the field specified by the first parameter
-     */
-    public function getInd() {
-        $args = func_get_args();
-        $index = array_shift($args);
-        $query = $this->prepareQuery($args);
-
-        if (preg_match("/LIMIT (\d+)/", $query, $limit) and $limit[1]) {
-            $query = preg_replace("/LIMIT (\d+)/", "", $query);
-        } else {
-            $limit[1] = null;
-        }
-
-        if (preg_match("/OFFSET (\d+)/", $query, $OFFSET) and $OFFSET[1]) {
-            $query = preg_replace("/OFFSET (\d+)/", "", $query);
-        } else {
-            $OFFSET[1] = 0;
-        }
-        $ret = array();
-
-        if ($res = $this->rawQuery($query)) {
-            while ($row = $this->fetch($res)) {
-                $ret[$row[$index]] = $row;
-            }
-            $this->free($res);
-        }
-
-        return array_slice($ret, $OFFSET[1], $limit[1], TRUE);
-    }
-
-    /**
-     * 
-     * @param string $key key
-     * @param string $sql sql-query
-     * @param mixed ... variables to binding 
-     * @return mixed array of scalars, indexed by the field from the first parameter. Indispensable for compiling dictionaries of the form key => value
-     */
-    public function getIndCol() {
-        $args = func_get_args();
-        $index = array_shift($args);
-        $query = $this->prepareQuery($args);
-        preg_match("/LIMIT (\d+)/", $query, $limit);
-        if ($limit[1]) {
-            $query = preg_replace("/LIMIT (\d+)/", "", $query);
-        } else {
-            $limit[1] = null;
-        }
-        preg_match("/OFFSET (\d+)/", $query, $OFFSET);
-        if ($OFFSET[1]) {
-            $query = preg_replace("/OFFSET (\d+)/", "", $query);
-        } else {
-            $OFFSET[1] = 0;
-        }
-        $ret = array();
-        if ($res = $this->rawQuery($query)) {
-            while ($row = $this->fetch($res)) {
-                $key = $row[$index];
-                unset($row[$index]);
-                $ret[$key] = reset($row);
-            }
-            $this->free($res);
-        }
-
-        return array_slice($ret, $OFFSET[1], $limit[1], TRUE);
-    }
 
     private function rawQuery($query) {
         $this->connect();
