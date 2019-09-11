@@ -93,7 +93,7 @@ class SQLBase
                     $offset -= 1;
                     continue;
                 }
-                $collection->push($row);
+                $collection->push(collect($row));
             }
             $this->free($res);
         }
